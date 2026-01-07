@@ -2990,6 +2990,10 @@ function wireCustomUI(){
     function init(){
       refreshAllPresetSelects();
       wireCustomUI();
+// ✅ PWA: register service worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+}
 
 // ✅ When iPhone PWA returns (Back), Safari may reload — restore draft state
 window.addEventListener("pageshow", (e) => {
