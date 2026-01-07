@@ -107,6 +107,18 @@ body.light{
     .jobactions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
     .jobactions button{ padding:8px 10px; border-radius:10px; font-weight:700; }
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+/* -----------------------------
+   Tier gating (Plan)
+   ----------------------------- */
+#appRoot:not(.plan-pro) .advanced-only{ display:none !important; }
+
+/* FREE plan: hide inventory + inventory-related buttons */
+#appRoot.plan-free #tabBtnInv{ display:none !important; }
+#appRoot.plan-free #tabInv{ display:none !important; }
+#appRoot.plan-free #addToInventoryBtn{ display:none !important; }
+#appRoot.plan-free #openInventoryBtn{ display:none !important; }
+#appRoot.plan-free #btnAddInvFromQR{ display:none !important; }
+#appRoot.plan-free #labelPrintCard{ display:none !important; }
 
     .beginner .advanced-only { display:none !important; }
 
@@ -251,6 +263,14 @@ body.light{
           <input id="lightMode" type="checkbox" />
           <b data-i18n="lightMode">Light Mode</b>
         </label>
+<label class="toggle" style="margin:0;">
+  <span class="pill" data-i18n="planLabel">Plan</span>
+  <select id="planSelect" class="langSelect" aria-label="Plan">
+    <option value="free" data-i18n="plan_free">Free</option>
+    <option value="beginner" data-i18n="plan_beginner">Beginner</option>
+    <option value="pro" data-i18n="plan_pro">Pro</option>
+  </select>
+</label>
 
         <label class="toggle" style="margin:0;">
           <input id="beginnerMode" type="checkbox" />
@@ -1005,7 +1025,11 @@ const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
         languageLabel: "Language",
         lightMode: "Light Mode",
         beginnerMode: "Beginner Mode",
-        labels_title: "Print Labels",
+        planLabel: "Plan",
+plan_free: "Free",
+plan_beginner: "Beginner",
+plan_pro: "Pro",
+  labels_title: "Print Labels",
 labels_pill: "Multi-print on one sheet",
 labels_preset: "Label preset",
 labels_qrSize: "QR size",
@@ -1285,7 +1309,12 @@ labels_printQty: "Print Qty",
         languageLabel: "Idioma",
         lightMode: "Modo Claro",
         beginnerMode: "Modo Principiante",
-labels_title: "Imprimir etiquetas",
+planLabel: "Plan",
+plan_free: "Gratis",
+plan_beginner: "Principiante",
+plan_pro: "Pro",
+
+        labels_title: "Imprimir etiquetas",
 labels_pill: "Varias en una hoja",
 labels_preset: "Tamaño de etiqueta",
 labels_select: "Seleccionar",
@@ -2165,6 +2194,47 @@ saveJSON(LS_SETTINGS_KEY, s);
 if ($("autoLoadDefaults")) $("autoLoadDefaults").checked = false;
 
     }
+// -----------------------------
+// Tier plan (Free / Beginner / Pro)
+// -----------------------------
+function getPlan(){
+  const s = loadJSON(LS_SETTINGS_KEY, {});
+  const p = (s && typeof s.plan === "string") ? s.plan : "free";
+  return (p === "pro" || p === "beginner" || p === "free") ? p : "free";
+}
+
+function setPlan(plan){
+  const p = (plan === "pro" || plan === "beginner") ? plan : "free";
+  const s = loadJSON(LS_SETTINGS_KEY, {});
+  s.plan = p;
+  saveJSON(LS_SETTINGS_KEY, s);
+  applyPlanUI(p);
+}
+
+function applyPlanUI(plan){
+  const root = $("appRoot");
+  if (!root) return;
+
+  root.classList.remove("plan-free","plan-beginner","plan-pro");
+  root.classList.add(plan === "pro" ? "plan-pro" : (plan === "beginner" ? "plan-beginner" : "plan-free"));
+
+  // If Free, force Calculator tab
+  if (plan === "free"){
+    showTab("calc");
+  }
+
+  // Beginner excludes thermal printing:
+  // force printer type to "sheet" unless Pro
+  const printerType = $("labelPrinterType");
+  if (printerType && plan !== "pro"){
+    printerType.value = "sheet";
+    // If someone tries to switch, snap back
+    printerType.onchange = () => { printerType.value = "sheet"; };
+  } else if (printerType && plan === "pro"){
+    // allow changes again
+    printerType.onchange = null;
+  }
+}
 
     function applyBeginnerModeUI(isBeginner){
       const root = $("appRoot");
@@ -3145,7 +3215,8 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
       $("copyBtn")?.addEventListener("click", copyQuote);
 
       // Settings
-      const settings = loadJSON(LS_SETTINGS_KEY, { beginnerMode: true, lightMode: false, autoLoadDefaults: true, lang:"en" });
+      const settings = loadJSON(LS_SETTINGS_KEY, { beginnerMode: true, lightMode: false, autoLoadDefaults: true, lang:"en", plan:"free" });
+
 
       const langDefault = (settings.lang === "es") ? "es" : "en";
       if ($("langSelect")) $("langSelect").value = langDefault;
@@ -3178,6 +3249,14 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
       });
 
       applyI18nToDOM();
+// Plan selector
+const plan = getPlan();
+if ($("planSelect")) $("planSelect").value = plan;
+applyPlanUI(plan);
+$("planSelect")?.addEventListener("change", (e) => {
+  setPlan(e.target.value);
+  applyI18nToDOM(); // refresh labels if language changes later
+});
 
       renderEmpty();
       renderJobs();
