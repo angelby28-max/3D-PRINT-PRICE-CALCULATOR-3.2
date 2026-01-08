@@ -3065,9 +3065,11 @@ function wireCustomUI(){
 // PRO GATE (Print QR)
 // ================================
 function hasPro(){
-  // Temporary Pro flag (we can later connect this to your real upgrade system)
-  return localStorage.getItem("ppc_pro") === "1";
+  // ✅ Use Plan dropdown as the source of truth
+  const p = getPlan();
+  return (p === "pro" || p === "beginner");
 }
+
 
 function proBlocked(featureName){
   alert(`🔒 ${featureName} is a Pro feature.\n\nUpgrade to unlock it.`);
