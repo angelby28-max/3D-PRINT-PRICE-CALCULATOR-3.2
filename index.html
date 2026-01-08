@@ -2993,13 +2993,19 @@ function wireCustomUI(){
 
 // ✅ When iPhone PWA returns (Back), Safari may reload — restore draft state
 window.addEventListener("pageshow", (e) => {
-  // ✅ Only restore when Safari returns from Back/Cache (BFCache)
-  if (e && e.persisted) {
-    restoreDraftFromSession(); // restore previous tab + calculator + QR state
-    restoreLabelSelection();
-    renderInventory(); // redraw inventory if needed
+  const returnedFromPrint =
+    sessionStorage.getItem("qrJustReturnedFromPrint") === "1";
+
+  // ✅ Restore state if returning from Print page OR if browser used BFCache
+  if (returnedFromPrint || (e && e.persisted)) {
+    sessionStorage.removeItem("qrJustReturnedFromPrint");
+
+    restoreDraftFromSession();   // ✅ restores calculator + QR + active tab
+    restoreLabelSelection();     // ✅ restores label selection
+    renderInventory();           // ✅ redraw inventory if needed
   }
 });
+
 
       // Tabs
       $("tabBtnCalc")?.addEventListener("click", () => showTab("calc"));
@@ -3211,11 +3217,11 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
 
     init();
   
-    // ✅ If coming back from Print page, reset QR UI so buttons behave normally
+// ✅ If coming back from Print page, pageshow handler will restore state
 if (sessionStorage.getItem("qrJustReturnedFromPrint") === "1") {
-  sessionStorage.removeItem("qrJustReturnedFromPrint");
-  
+  // Leave it here; pageshow will remove it after restoring
 }
+
     applyQRParamsOnLoad();
 
   </script>
