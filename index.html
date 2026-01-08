@@ -3308,14 +3308,26 @@ $("planSelect")?.addEventListener("change", (e) => {
   if (item || price) showTab("calc");
 }
 
-    init();
-  
-    // ✅ If coming back from Print page, reset QR UI so buttons behave normally
-if (sessionStorage.getItem("qrJustReturnedFromPrint") === "1") {
+ init();
+
+// Detect if we just returned from Print
+const returnedFromPrint =
+  sessionStorage.getItem("qrJustReturnedFromPrint") === "1";
+
+// ✅ If coming back from Print page, fully restore app state
+if (returnedFromPrint) {
   sessionStorage.removeItem("qrJustReturnedFromPrint");
-  
+
+  restoreDraftFromSession();
+  restoreLabelSelection();
+  renderInventory();
 }
-    applyQRParamsOnLoad();
+
+// ✅ Only apply QR params on a normal page load
+if (!returnedFromPrint) {
+  applyQRParamsOnLoad();
+}
+
 
   </script>
 
