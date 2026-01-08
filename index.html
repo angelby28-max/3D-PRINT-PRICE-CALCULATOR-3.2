@@ -819,7 +819,13 @@ function makeQRFromCalculator(){
   // Scroll to QR so you can see it
   $("qrItemCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
-function printQR(){
+
+    function printQR(){
+    if (!hasPro()){
+    proBlocked("Print QR");
+    return;
+  }
+
   const name = ($("qrItemName")?.value || "").trim();
   const priceRaw = ($("qrItemPrice")?.value || "").trim();
   const qrBox = $("qrPreview");
@@ -3055,6 +3061,17 @@ function wireCustomUI(){
 
   // Initial render
   refresh();
+}
+// ================================
+// PRO GATE (Print QR)
+// ================================
+function hasPro(){
+  // Temporary Pro flag (we can later connect this to your real upgrade system)
+  return localStorage.getItem("ppc_pro") === "1";
+}
+
+function proBlocked(featureName){
+  alert(`🔒 ${featureName} is a Pro feature.\n\nUpgrade to unlock it.`);
 }
 
     function init(){
