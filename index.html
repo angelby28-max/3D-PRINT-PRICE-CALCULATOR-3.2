@@ -3064,16 +3064,22 @@ function wireCustomUI(){
 // ================================
 // PRO GATE (Print QR)
 // ================================
-function hasPro(){
-  // ✅ Use Plan dropdown as the source of truth
+// -----------------------------
+// Plan capability helpers
+// -----------------------------
+function hasBeginner(){
   const p = getPlan();
-  return (p === "pro" || p === "beginner");
+  return (p === "beginner" || p === "pro");
 }
 
+function hasPro(){
+  return (getPlan() === "pro");
+}
 
 function proBlocked(featureName){
   alert(`🔒 ${featureName} is a Pro feature.\n\nUpgrade to unlock it.`);
 }
+
 
     function init(){
       refreshAllPresetSelects();
