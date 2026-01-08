@@ -911,10 +911,7 @@ sessionStorage.setItem("qrPrintReturnURL", window.location.href);
     img{ width: var(--qr); height: var(--qr); display:block; }
     
     /* ✅ When saving as PDF on phone, hide UI so label fits perfectly */
-@media screen{
-  .toolbar,.help{ display:none; }
-}
-    @media print{
+      @media print{
       .toolbar,.help{ display:none; }
       .labelWrap{ padding:0; }
       .label{ border:0; }
