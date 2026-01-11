@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,8 +7,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>3D Print Price Calculator</title>
   <meta name="theme-color" content="#111827" />
-  <style>
-    :root { --bg:#0b1220; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --line:#1f2937; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; }
+ <style>
+   :root { --bg:#0b1220; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --line:#1f2937; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; }
     *{ box-sizing:border-box; }
     body{
   margin:0;
@@ -18,6 +19,50 @@
 body.light{
   background: #f3f4f6;
   color: #111827;
+}
+/* ================================
+✅ Upgrade modal styling
+================================ */
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 16px;
+  z-index: 9999;
+}
+.modalCard{
+  width: min(520px, 100%);
+  background: #111827;
+  border: 1px solid rgba(31,41,55,.9);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+body.light .modalCard{
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+.modalTitle{
+  font-weight: 900;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.modalBody{
+  color: rgba(229,231,235,.9);
+  line-height: 1.35;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+body.light .modalBody{ color:#111827; }
+
+.modalActions{
+  display:flex;
+  gap: 10px;
+  justify-content:flex-end;
+  flex-wrap: wrap;
 }
 
     .wrap{ max-width:1200px; margin:0 auto; padding:18px; }
@@ -109,8 +154,16 @@ body.light{
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
     .beginner .advanced-only { display:none !important; }
+     /* Beginner Mode – hide entire field blocks (label + input) */
+.beginner div:has(> input#bulkDiscountPct),
+.beginner div:has(> input#wastePct),
+.beginner div:has(> input#packagingCost),
+.beginner div:has(> input#consumablesCost),
+.beginner div:has(> input#overheadPct){
+  display:none !important;
+}
 
-    #appRoot.light{
+   #appRoot.light{
       --bg:#f3f4f6;
       --card:#ffffff;
       --text:#111827;
@@ -246,14 +299,22 @@ body.light{
             <option value="es">Español</option>
           </select>
         </label>
+<label class="toggle" style="margin:0;">
+  <span class="pill" id="tierLabelPill">Tier</span>
+  <select id="tierSelect" class="langSelect" aria-label="Tier">
+    <option value="beginner">Beginner</option>
+    <option value="advanced">Advanced</option>
+    <option value="pro">Pro</option>
+  </select>
+</label>
 
         <label class="toggle" style="margin:0;">
           <input id="lightMode" type="checkbox" />
           <b data-i18n="lightMode">Light Mode</b>
         </label>
 
-        <label class="toggle" style="margin:0;">
-          <input id="beginnerMode" type="checkbox" />
+        <label class="toggle" style="margin:0; display:none;">
+          <input type="checkbox" id="beginnerMode" disabled>
           <b data-i18n="beginnerMode">Beginner Mode</b>
         </label>
       </div>
@@ -475,8 +536,8 @@ body.light{
   <div class="divider"></div>
 
   <div class="sec-title">
-    <h2 data-i18n="customTitle">Custom order</h2>
-    <span class="pill" data-i18n="customPill">Extra charge</span>
+    <h2 data-i18n="customTitle">Custom Items Fee</h2>
+   <span class="pill" data-i18n="customPill">Extra charge</span>
   </div>
 
   <label class="toggle" style="margin:0 0 10px 0;">
@@ -488,8 +549,8 @@ body.light{
     <div class="fields">
       <div>
         <label data-i18n="customPctLabel">Custom surcharge (%)</label>
-        <input id="customPct" type="number" min="0" step="0.5" value="15" inputmode="decimal" />
-      </div>
+        <input id="customPct" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g., 15" />
+     </div>
 
       <div class="row" style="align-self:end; gap:8px; flex-wrap:wrap;">
         <button type="button" class="secondary" id="customPresetLight" data-i18n="customLight">Light +10%</button>
@@ -753,6 +814,150 @@ body.light{
 
   <script>
     const $ = (id) => document.getElementById(id);
+   // ================================
+// ✅ FEATURE TIERS (Single Source of Truth)
+// ================================
+// TIER MATRIX (what each plan is allowed to do)
+// Beginner:
+// - Can generate QR codes (preview + link)
+// - Can add from QR to inventory (optional: you decide later)
+// - CANNOT print QR / print labels / export-import / job history
+//
+// Advanced:
+// - Full calculator features incl. Custom surcharge + Platform fees + Depreciation
+// - Still can restrict printing/inventory if you want (we’ll decide later)
+//
+// Pro:
+// - Everything unlocked (no restrictions)
+
+const LS_TIER_KEY = "app_tier_v1"; // stored in localStorage
+
+const TIERS = {
+  beginner: {
+    name: { en: "Beginner", es: "Principiante" },
+    // QR
+    qr_generate: true,
+    qr_print: false,
+
+    // Inventory (we can change later)
+    inv_add_from_calc: true,
+    inv_add_from_qr: true,
+    inv_export_import: false,
+    inv_clear_all: false,
+
+    // Labels / printing
+    labels_print: false,
+
+    // Calculator advanced sections
+    custom_surcharge: false,
+    platform_fees: false,
+    depreciation: false,
+    presets: false,
+    job_history: false
+  },
+
+  advanced: {
+    name: { en: "Advanced", es: "Avanzado" },
+    // QR
+    qr_generate: true,
+    qr_print: false, // you said you want QR generate but NOT print for lower tiers
+
+    // Inventory (we can decide later; safe default = still locked)
+    inv_add_from_calc: true,
+    inv_add_from_qr: true,
+    inv_export_import: false,
+    inv_clear_all: false,
+
+    // Labels / printing
+    labels_print: false,
+
+    // Calculator advanced sections (UNLOCKED)
+    custom_surcharge: false,
+    platform_fees: true,
+    depreciation: true,
+    presets: true,
+    job_history: false // optional — can move to Pro if you want
+  },
+
+  pro: {
+    name: { en: "Pro", es: "Pro" },
+    // Everything unlocked
+    qr_generate: true,
+    qr_print: true,
+
+    inv_add_from_calc: true,
+    inv_add_from_qr: true,
+    inv_export_import: true,
+    inv_clear_all: true,
+
+    labels_print: true,
+
+    custom_surcharge: true,
+    platform_fees: true,
+    depreciation: true,
+    presets: true,
+    job_history: true
+  }
+};
+
+// Current tier getter (defaults to beginner)
+function getTier(){
+  const saved = (localStorage.getItem(LS_TIER_KEY) || "beginner").trim();
+  return TIERS[saved] ? saved : "beginner";
+}
+
+// Feature access check
+function hasAccess(featureKey){
+  const tierKey = getTier();
+  const tier = TIERS[tierKey] || TIERS.beginner;
+  return !!tier[featureKey];
+}
+// ================================
+// ✅ Upgrade modal helpers
+// ================================
+function showUpgrade(featureLabel){
+  const modal = $("upgradeModal");
+  const body = $("upgradeBody");
+  const closeBtn = $("upgradeCloseBtn");
+  const goBtn = $("upgradeGoBtn");
+
+  if (!modal || !body) return;
+
+  const isEs = (typeof currentLang === "function" && currentLang() === "es");
+
+  const title = isEs ? "Se requiere actualización" : "Upgrade required";
+  const msg = isEs
+    ? `Esta función (${featureLabel}) está disponible en un plan superior.`
+    : `This feature (${featureLabel}) is available in a higher plan.`;
+
+  const titleEl = $("upgradeTitle");
+  if (titleEl) titleEl.textContent = title;
+  body.textContent = msg;
+
+  modal.style.display = "flex";
+
+  const close = () => { modal.style.display = "none"; };
+
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+  if (closeBtn) closeBtn.onclick = close;
+
+  if (goBtn) goBtn.onclick = () => {
+    close();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+}
+
+/**
+ * Gate a feature without removing buttons.
+ * Usage:
+ *   if (!gate("qr_print", "Print QR")) return;
+ */
+function gate(featureKey, featureLabel){
+  if (hasAccess(featureKey)) return true;
+  showUpgrade(featureLabel);
+  return false;
+}
+
     // ================================
 // ✅ QR ITEM (Step 2: button wiring)
 // ================================
@@ -800,6 +1005,7 @@ function makeQRFromCalculator(){
   $("qrItemCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function printQR(){
+  if (!gate("qr_print","Print QR")) return;
   const name = ($("qrItemName")?.value || "").trim();
   const priceRaw = ($("qrItemPrice")?.value || "").trim();
   const qrBox = $("qrPreview");
@@ -937,11 +1143,12 @@ sessionStorage.setItem("qrPrintReturnURL", window.location.href);
   </div>
 
   <script>
-    window.__goBackToApp = () => {
- sessionStorage.setItem("qrJustReturnedFromPrint", "1");
-const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
+   window.__goBackToApp = () => {
+  sessionStorage.setItem("qrJustReturnedFromPrint", "1");
+  const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
   window.location.href = returnURL;
 };
+
 
 
     // Try auto-print (works on laptop; sometimes blocked on iPhone PWA)
@@ -1070,6 +1277,15 @@ labels_printQty: "Print Qty",
 
         jobInputs: "Job inputs",
         updatesAsYouType: "Updates as you type",
+// Custom Items Fee
+customTitle: "Custom Items Fee",
+customPill: "Extra fee",
+customToggle: "Enable Custom Items Fee",
+customPctLabel: "Custom Items Fee (%)",
+customLight: "Light +10%",
+customMed: "Medium +15%",
+customHeavy: "Heavy +25%",
+customNote: "Covers extra time, revisions, communication, and risk for custom work.",
 
         quantity: "Quantity",
         laborPerUnit: "Labor minutes are per unit",
@@ -1350,6 +1566,15 @@ labels_printQty: "Cant. a imprimir",
 
         jobInputs: "Datos del trabajo",
         updatesAsYouType: "Se actualiza al escribir",
+// Cargo por Artículos Personalizados
+customTitle: "Cargo por artículos personalizados",
+customPill: "Cargo extra",
+customToggle: "Activar cargo por artículos personalizados",
+customPctLabel: "Cargo por artículos personalizados (%)",
+customLight: "Ligero +10%",
+customMed: "Medio +15%",
+customHeavy: "Pesado +25%",
+customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo personalizado.",
 
         quantity: "Cantidad",
         laborPerUnit: "Mano de obra (minutos) por unidad",
@@ -2474,14 +2699,17 @@ function printSelectedLabels(){
   ${labelsHTML}
 
   <script>
-    window.__goBackToApp = () => {
-      const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
-      window.location.href = returnURL;
-    };
+ window.__goBackToApp = () => {
+  sessionStorage.setItem("qrJustReturnedFromPrint", "1");
+  const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
+  window.location.href = returnURL;
+};
+
     window.onload = () => {
       setTimeout(() => { try{ window.print(); }catch(e){} }, 300);
     };
   </scr` + `ipt>
+
 </body>
 </html>`;
 
@@ -2582,9 +2810,11 @@ function printSelectedLabels(){
 
   <script>
     window.__goBackToApp = () => {
-      const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
-      window.location.href = returnURL;
-    };
+  sessionStorage.setItem("qrJustReturnedFromPrint", "1");
+  const returnURL = sessionStorage.getItem("qrPrintReturnURL") || "./";
+  window.location.href = returnURL;
+};
+
     window.onload = () => {
       setTimeout(() => { try{ window.print(); }catch(e){} }, 300);
     };
@@ -2747,6 +2977,14 @@ function printSelectedLabels(){
     }
 
     function addCurrentCalcToInventory(){
+       // Tier gate (Beginner cannot use Inventory)
+  if (typeof getTier === "function" && getTier() === "beginner"){
+    alert((currentLang()==="es")
+      ? "Inventario disponible en Advanced y Pro."
+      : "Inventory is available in Advanced and Pro.");
+    return;
+  }
+
       const r = calc();
       if (!r){ alert(t("alert_enterValuesFirst")); return; }
 
@@ -2771,8 +3009,17 @@ function printSelectedLabels(){
       $("status").dataset.i18nStatusKey = "";
     }
 function addQRToInventory(){
+ // Tier gate (Beginner cannot use Inventory)
+  if (typeof getTier === "function" && getTier() === "beginner"){
+    alert((currentLang()==="es")
+      ? "Inventario disponible en Advanced y Pro."
+      : "Inventory is available in Advanced and Pro.");
+    return;
+  }
+
   const name = ($("qrItemName")?.value || "").trim();
   const priceRaw = ($("qrItemPrice")?.value || "").trim();
+  
 
   if (!name){
     alert((currentLang()==="es") ? "Escribe un nombre." : "Enter an item name.");
@@ -2835,6 +3082,9 @@ function addQRToInventory(){
     function applyI18nToDOM(){
       const lang = currentLang();
       document.documentElement.lang = lang;
+// ✅ Update Tier UI text when language changes
+if ($("tierLabelPill")) $("tierLabelPill").textContent = (lang === "es") ? "Plan" : "Tier";
+if ($("tierSelect")) $("tierSelect").value = getTier();
 
       document.querySelectorAll("[data-i18n]").forEach(el => {
         const key = el.getAttribute("data-i18n");
@@ -2959,7 +3209,33 @@ function wireCustomUI(){
     calc(); // update totals
   };
 
-  isCustom.addEventListener("change", refresh);
+  isCustom.addEventListener("change", () => {
+  // ✅ Pro-only gate: Advanced can see it, but cannot activate it
+  if (typeof getTier === "function" && getTier() !== "pro") {
+    // Immediately revert the toggle
+    isCustom.checked = false;
+    customFields.style.display = "none";
+    calc();
+
+    // Message (use modal if you have it, otherwise alert)
+    const lang = currentLang();
+    const msg = (lang === "es")
+      ? "Las tarifas por pedido personalizado son solo para Pro."
+      : "Custom item fees are Pro only.";
+
+    // If your upgrade modal exists, use it; otherwise fallback
+    if (typeof window.showUpgradeModal === "function") {
+      window.showUpgradeModal(msg);
+    } else {
+      alert(msg);
+    }
+    return;
+  }
+
+  // Pro can use it normally
+  refresh();
+});
+
 
   light?.addEventListener("click", () => {
     isCustom.checked = true;
@@ -3009,8 +3285,22 @@ window.addEventListener("pageshow", (e) => {
 
       // Tabs
       $("tabBtnCalc")?.addEventListener("click", () => showTab("calc"));
-      $("tabBtnInv")?.addEventListener("click", () => showTab("inv"));
-      $("openInventoryBtn")?.addEventListener("click", () => showTab("inv"));
+     $("tabBtnInv")?.addEventListener("click", () => {
+  if (getTier() === "beginner"){
+    alert("Inventory is available in Advanced and Pro mode.");
+    return;
+  }
+  showTab("inv");
+});
+
+$("openInventoryBtn")?.addEventListener("click", () => {
+  if (getTier() === "beginner"){
+    alert("Inventory is available in Advanced and Pro mode.");
+    return;
+  }
+  showTab("inv");
+});
+
       
 // ✅ QR Item buttons (iPhone/PWA-safe)
 function wireQRButtons(){
@@ -3056,7 +3346,16 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
         e.target.value = "";
       });
       $("invClearBtn")?.addEventListener("click", clearInventory);
-     $("btnPrintSelectedLabels")?.addEventListener("click", printSelectedLabels);
+     $("btnPrintSelectedLabels")?.addEventListener("click", () => {
+  if (typeof getTier === "function" && getTier() !== "pro"){
+    alert((currentLang()==="es")
+      ? "Impresión de etiquetas es Pro."
+      : "Label printing is Pro only.");
+    return;
+  }
+  printSelectedLabels();
+});
+
      $("btnClearLabelSelection")?.addEventListener("click", clearLabelSelection);
 
       $("addToInventoryBtn")?.addEventListener("click", addCurrentCalcToInventory);
@@ -3139,8 +3438,26 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
         setStatusKey("status_jobSaved");
       });
 
-      $("exportJobsBtn")?.addEventListener("click", exportJobs);
-      $("importJobsBtn")?.addEventListener("click", importJobs);
+      $("exportJobsBtn")?.addEventListener("click", () => {
+  if (typeof getTier === "function" && getTier() !== "pro"){
+    alert((currentLang()==="es")
+      ? "Exportar historial (JSON) es Pro."
+      : "Export Job History (JSON) is Pro.");
+    return;
+  }
+  exportJobs();
+});
+$("importJobsBtn")?.addEventListener("click", () => {
+  if (typeof getTier === "function" && getTier() !== "pro"){
+    alert((currentLang()==="es")
+      ? "Importar historial (JSON) es Pro."
+      : "Import Job History (JSON) is Pro.");
+    return;
+  }
+  importJobs();
+});
+
+      
       $("clearJobsBtn")?.addEventListener("click", clearJobs);
 
       $("resetBtn")?.addEventListener("click", resetAll);
@@ -3156,28 +3473,75 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
         setLang(e.target.value);
         applyI18nToDOM();
       });
+// ✅ Tier selector (Beginner / Advanced / Pro)
+if ($("tierSelect")) {
+  // set dropdown to saved tier
+  $("tierSelect").value = getTier();
 
-      const beginnerDefault = (typeof settings.beginnerMode === "boolean") ? settings.beginnerMode : true;
-      $("beginnerMode").checked = beginnerDefault;
-      applyBeginnerModeUI(beginnerDefault);
-      $("beginnerMode").addEventListener("change", (e) => {
-        const on = e.target.checked;
-        applyBeginnerModeUI(on);
-        const s = loadJSON(LS_SETTINGS_KEY, {});
-        s.beginnerMode = on;
-        saveJSON(LS_SETTINGS_KEY, s);
-      });
+  // label text (simple for now; we can i18n it later)
+  $("tierLabelPill").textContent = (currentLang() === "es") ? "Plan" : "Tier";
 
-      const lightDefault = (typeof settings.lightMode === "boolean") ? settings.lightMode : false;
-      $("lightMode").checked = lightDefault;
-      applyThemeUI(lightDefault);
-      $("lightMode").addEventListener("change", (e) => {
-        const on = e.target.checked;
-        applyThemeUI(on);
-        const s = loadJSON(LS_SETTINGS_KEY, {});
-        s.lightMode = on;
-        saveJSON(LS_SETTINGS_KEY, s);
-      });
+ $("tierSelect").addEventListener("change", (e) => {
+  const nextRaw = (e.target.value || "beginner").trim().toLowerCase();
+  const next = TIERS[nextRaw] ? nextRaw : "beginner";
+
+  // Save tier
+  localStorage.setItem(LS_TIER_KEY, next);
+
+  // ✅ Tier drives Beginner Mode:
+  // Beginner tier => beginner UI
+  // Advanced + Pro => full UI (advanced-only visible)
+  const isBeginnerTier = (next === "beginner");
+
+  // Sync the checkbox (even if disabled, it can reflect status)
+  if ($("beginnerMode")) $("beginnerMode").checked = isBeginnerTier;
+
+ 
+  // Status message
+  const tierName = (TIERS[next].name && TIERS[next].name[currentLang()]) ? TIERS[next].name[currentLang()] : next;
+  if ($("status")) {
+    $("status").textContent = (currentLang() === "es")
+      ? `Plan: ${tierName}`
+      : `Tier: ${tierName}`;
+    $("status").dataset.i18nStatusKey = "";
+  }
+
+  // Apply UI + refresh
+  applyBeginnerModeUI(isBeginnerTier);
+  renderInventory();
+  calc();
+});
+
+}
+
+   // ✅ Tier drives Beginner UI (single source of truth)
+const tierNow = getTier();
+const isBeginnerTier = (tierNow === "beginner");
+
+if ($("tierSelect")) $("tierSelect").value = tierNow;
+if ($("beginnerMode")) $("beginnerMode").checked = isBeginnerTier;
+
+applyBeginnerModeUI(isBeginnerTier);
+
+ const lightDefault = (typeof settings.lightMode === "boolean") ? settings.lightMode : false;
+
+if ($("lightMode")) {
+  $("lightMode").checked = lightDefault;
+  applyThemeUI(lightDefault);
+
+  $("lightMode").addEventListener("change", (e) => {
+    const on = e.target.checked;
+    applyThemeUI(on);
+
+    const s = loadJSON(LS_SETTINGS_KEY, {});
+    s.lightMode = on;
+    saveJSON(LS_SETTINGS_KEY, s);
+  });
+} else {
+  // If the toggle doesn't exist, still apply the saved/default theme
+  applyThemeUI(lightDefault);
+}
+
 
       applyI18nToDOM();
 
@@ -3225,6 +3589,22 @@ if (sessionStorage.getItem("qrJustReturnedFromPrint") === "1") {
     applyQRParamsOnLoad();
 
   </script>
+<!-- ================================
+✅ UPGRADE REQUIRED MODAL (Tier gating)
+================================ -->
+<div id="upgradeModal" class="modalOverlay" style="display:none;">
+  <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
+    <div class="modalTitle" id="upgradeTitle">Upgrade required</div>
+    <div class="modalBody" id="upgradeBody">
+      This feature is available in a higher plan.
+    </div>
+
+    <div class="modalActions">
+      <button class="btn ghost" id="upgradeCloseBtn" type="button">Close</button>
+      <button class="btn" id="upgradeGoBtn" type="button">See plans</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
