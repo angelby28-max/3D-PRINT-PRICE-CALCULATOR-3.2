@@ -525,6 +525,17 @@ body.light .modalBody{ color:#111827; }
               <label data-i18n="printHours">Print time (hours) — per unit</label>
               <input id="printHours" type="number" min="0" step="0.01" data-i18n-placeholder="ph_printHours" placeholder="From slicer (e.g., 6)" />
             </div>
+            <div>
+            <label data-i18n="machineRateHr">Machine time rate ($/hr) (optional)</label>
+            <input id="machineRateHr" type="number" min="0" step="0.01"
+            data-i18n-placeholder="ph_machineRateHr"
+            placeholder="e.g., 0.50" />
+            </div>
+
+            <div>
+            <label data-i18n="printMinutes">Print time (minutes) — per unit</label>
+            <input id="printMinutes" type="number" min="0" step="1" data-i18n-placeholder="ph_printMinutes" placeholder="From slicer (e.g., 25)" />
+            </div>
 
             <div>
               <label data-i18n="gramsUsed">Filament used (grams) — per unit</label>
@@ -1390,7 +1401,10 @@ customNote: "Covers extra time, revisions, communication, and risk for custom wo
         batchNote: "Batch note: Quantity multiplies <b>print time, filament, packaging, consumables</b>. Labor can be total or per unit (checkbox).",
         bulkNote: "Bulk discount applies to the <b>batch total</b> (before platform fees). It will not drop below <b>your total cost</b>.",
 
-        printHours: "Print time (hours) — per unit",
+      printHours: "Print time (hours) — per unit (hours + minutes)",
+      machineRateHr: "Machine time rate ($/hr) — required to apply print time",
+       ph_machineRateHr: "e.g., 0.50",
+       printMinutes: "Print time (minutes) — per unit (adds to hours)",
         gramsUsed: "Filament used (grams) — per unit",
         spoolPrice: "Spool price ($)",
         spoolWeight: "Spool weight (grams)",
@@ -1456,6 +1470,7 @@ customNote: "Covers extra time, revisions, communication, and risk for custom wo
         ph_quantity: "e.g., 10",
         ph_bulkDiscountPct: "e.g., 5",
         ph_printHours: "From slicer (e.g., 6)",
+        ph_printMinutes: "From slicer (e.g., 25)",
         ph_gramsUsed: "From slicer (e.g., 100)",
         ph_spoolPrice: "e.g., 20",
         ph_spoolWeight: "Usually 1000",
@@ -1697,7 +1712,10 @@ customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo 
         batchNote: "Nota: La cantidad multiplica <b>tiempo, filamento, empaque, consumibles</b>. La mano de obra puede ser total o por unidad (casilla).",
         bulkNote: "El descuento se aplica al <b>total del lote</b> (antes de comisiones). No bajará de <b>tu costo total</b>.",
 
-        printHours: "Tiempo de impresión (horas) — por unidad",
+       printHours: "Tiempo de impresión (horas) — por unidad (horas + minutos)",
+       machineRateHr: "Costo por hora de máquina ($/hr) — requerido para aplicar tiempo de impresión",
+        ph_machineRateHr: "ej., 0.50",
+        printMinutes: "Tiempo de impresión (minutos) — por unidad (se suma a horas)",
         gramsUsed: "Filamento usado (gramos) — por unidad",
         spoolPrice: "Precio del rollo ($)",
         spoolWeight: "Peso del rollo (gramos)",
@@ -1764,6 +1782,7 @@ customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo 
         ph_quantity: "ej., 10",
         ph_bulkDiscountPct: "ej., 5",
         ph_printHours: "Del slicer (ej., 6)",
+        ph_printMinutes: "Del slicer (ej., 25)",
         ph_gramsUsed: "Del slicer (ej., 100)",
         ph_spoolPrice: "ej., 20",
         ph_spoolWeight: "Normalmente 1000",
@@ -1990,15 +2009,16 @@ customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo 
 const SS_DRAFT_KEY = "qr_draft_state_v1"; // sessionStorage (temporary)
 
     // Inputs managed
-    const inputIds = [
-      "quantity","bulkDiscountPct","printHours","gramsUsed","spoolPrice","spoolWeight","wastePct",
-      "packagingCost","consumablesCost",
-      "powerKW","elecRate","laborRate","laborMin","overheadPct","profitPct","customPct",
-"minFee",
-      "printerPrice","printerLifeHours","maintenancePerHr",
-      "platformFeePct","platformFixedFee","platformListingFee","platformNotes",
-      "jobName","jobNotes"
-    ];
+   const inputIds = [
+  "quantity","bulkDiscountPct","printHours","printMinutes","machineRateHr","gramsUsed",
+  "packagingCost","consumablesCost",
+  "powerKW","elecRate","laborRate","laborMin","overheadPct","profitPct","customPct",
+  "minFee",
+  "printerPrice","printerLifeHours","maintenancePerHr",
+  "platformFeePct","platformFixedFee","platformListingFee","platformNotes",
+  "jobName","jobNotes"
+];
+
     const clearState = Object.fromEntries(inputIds.map(id => [id, ""]));
 
     function money(n){
@@ -2748,7 +2768,8 @@ function applyUnlockedTierToApp(){
       const qty = Math.max(1, intOr1("quantity"));
 
       // Per-unit inputs
-      const printHoursUnit = num("printHours");
+      const printHoursUnit = num("printHours") + (num("printMinutes") / 60);
+
       const gramsUsedUnit = num("gramsUsed");
 
       const bulkDiscountPct = Math.max(0, num("bulkDiscountPct")) / 100;
@@ -2791,13 +2812,13 @@ function applyUnlockedTierToApp(){
       const materialCost = effectiveGrams * costPerGram;
 
       const electricityCost = printHours * powerKW * elecRate;
+      const machineTimeCost = printHours * num("machineRateHr");
 
       const laborMinTotal = laborPerUnit ? (laborMinInput * qty) : laborMinInput;
       const laborHours = laborMinTotal / 60;
       const laborCost = laborHours * laborRate;
 
-      const directCost = materialCost + packaging + consumables + electricityCost + machineCost + laborCost;
-
+      const directCost = materialCost + packaging + consumables + electricityCost + machineCost + machineTimeCost + laborCost;
       const overheadCost = directCost * Math.max(0, overheadPct);
       const costWithOverhead = directCost + overheadCost;
 
@@ -2864,6 +2885,7 @@ if (isCustom && customPct > 0){
         ["bd_consumables", consumables, "money"],
         ["bd_electricity", electricityCost, "money"],
         ["bd_machine", machineCost, "money"],
+        ["bd_machineTime", machineTimeCost, "money"],
         ["bd_labor", laborCost, "money"],
         ["bd_base", directCost, "money"],
         ["bd_overhead", overheadCost, "money"],
@@ -2910,7 +2932,7 @@ if (isCustom && customPct > 0){
         totalCost, profitDollars, profitPctActual,
         printHours, gramsUsed, effectiveGrams,
         materialCost, packaging, consumables,
-        electricityCost, machineCost, laborCost,
+        electricityCost, machineCost, machineTimeCost, laborCost,
         overheadCost, targetWithMin, discountedTarget,
         platformAdded, minApplied, laborMinTotal,
         bulkDiscountAmt
