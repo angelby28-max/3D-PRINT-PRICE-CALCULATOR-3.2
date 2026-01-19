@@ -86,8 +86,22 @@ body.light .modalBody{ color:#111827; }
       border-radius:14px;
       box-shadow: 0 10px 30px rgba(0,0,0,.25);
       padding:14px;
-    }
-    
+      margin-top: 0px;
+     }
+    /* ===========================
+   HELP PAGE TEXT STYLING
+=========================== */
+.help-content{
+  color: var(--text);
+  line-height: 1.45;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Light mode fix */
+#appRoot.light .help-content{
+  color: #111827;
+}
    .sec-title{ display:flex; justify-content:space-between; align-items:baseline; margin:0 0 8px; gap:10px; }
     .sec-title h2{ font-size:14px; margin:0; }
     .sec-title span{ color:var(--muted); font-size:12px; }
@@ -219,10 +233,20 @@ body.light .modalBody{ color:#111827; }
       display:flex;
       gap:10px;
       align-items:center;
-      margin: 10px 0 14px;
+      margin: 6px 0 6px;
       flex-wrap:wrap;
     }
-    .tabbtn{
+    /* ✅ Help tab: remove extra top spacing */
+#tabHelp{
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+#tabHelp .card{
+  margin-top: 0 !important;
+}
+
+   .tabbtn{
       border:1px solid var(--line);
       background:#0b1020;
       color:var(--text);
@@ -385,7 +409,9 @@ body.light .modalBody{ color:#111827; }
     <div class="tabs" role="tablist" aria-label="App tabs">
       <button id="tabBtnCalc" class="tabbtn active" type="button" data-tab="calc" data-i18n="tab_calculator">Calculator</button>
       <button id="tabBtnInv" class="tabbtn" type="button" data-tab="inv" data-i18n="tab_inventory">Inventory</button>
-    </div>
+     <button id="tabBtnHelp" class="tabbtn" type="button" data-tab="help" data-i18n="tab_help">Help</button>
+
+     </div>
 
     <!-- Calculator Tab -->
     <section id="tabCalc">
@@ -512,8 +538,8 @@ body.light .modalBody{ color:#111827; }
             <div class="row" style="align-self:end; justify-content:flex-start;">
               <label class="toggle" style="margin:0;">
                 <input id="laborPerUnit" type="checkbox" />
-                <span data-i18n="laborPerUnit">Labor minutes are per unit</span>
-              </label>
+     <span data-i18n="laborPerUnit">Multiply labor by quantity</span>
+            </label>
             </div>
 
             <div>
@@ -525,8 +551,8 @@ body.light .modalBody{ color:#111827; }
               <label data-i18n="printHours">Print time (hours) — per unit</label>
               <input id="printHours" type="number" min="0" step="0.01" data-i18n-placeholder="ph_printHours" placeholder="From slicer (e.g., 6)" />
             </div>
-            <div>
-            <label data-i18n="machineRateHr">Machine time rate ($/hr) (optional)</label>
+           <div id="machineRateRow">
+           <label data-i18n="machineRateHr">Machine time rate ($/hr) (optional)</label>
             <input id="machineRateHr" type="number" min="0" step="0.01"
             data-i18n-placeholder="ph_machineRateHr"
             placeholder="e.g., 0.50" />
@@ -892,7 +918,45 @@ body.light .modalBody{ color:#111827; }
         <div class="invList" id="invList"></div>
       </div>
     </section>
+  <!-- Help Tab -->
+<section id="tabHelp" style="display:none;">
+  <div class="card">
+
+    <div class="sec-title">
+      <h2 data-i18n="help_title">Help</h2>
+      <span class="pill" data-i18n="help_pill">Guide</span>
+    </div>
+
+    <div class="help-sections">
+
+     <div class="help-item">
+  <button class="help-toggle" type="button" data-i18n="help_calc_btn">📐 Calculator</button>
+  <div class="help-content" data-i18n-html="help_calc_body" style="display:none;">
+    <!-- content is injected by i18n -->
   </div>
+</div>
+
+<div class="help-item">
+  <button class="help-toggle" type="button" data-i18n="help_inv_btn">📦 Inventory</button>
+  <div class="help-content" data-i18n-html="help_inv_body" style="display:none;"></div>
+</div>
+
+<div class="help-item">
+  <button class="help-toggle" type="button" data-i18n="help_qr_btn">🔗 QR Codes</button>
+  <div class="help-content" data-i18n-html="help_qr_body" style="display:none;"></div>
+</div>
+
+
+    </div>
+
+    <div class="note">
+      Help page is coming next. In the next commits we will add the full Help layout and bilingual content.
+    </div>
+
+  </div>
+</section>
+  </div>
+
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -1337,9 +1401,78 @@ tier_beginner: "Beginner",
 tier_advanced: "Advanced",
 tier_pro: "Pro",
 tier_label: "Tier",
+tab_help: "Help",
+help_calc_btn: "📐 Calculator",
+help_calc_body: `
+<b>Calculator fields</b><br/>
+• <b>Quantity</b>: how many units you’re making.<br/>
+• <b>Print hours</b>: total print time (all units).<br/>
+• <b>Grams used</b>: total filament used (all units).<br/>
+• <b>Spool price / weight</b>: calculates cost per gram.<br/>
+• <b>Waste %</b>: extra filament for supports/failures.<br/>
+• <b>Packaging</b>: boxes, bags, labels (per job).<br/>
+• <b>Consumables</b>: tape, glue, nozzles, small supplies.<br/>
+• <b>Power draw (kW)</b>: how much electricity your printer uses.<br/>
+• <b>Electricity rate ($/kWh)</b>: what your power company charges per kilowatt hour.<br/>
+• <b>Machine rate</b>: wear/maintenance per hour (if used).<br/>
+• <b>Labor rate + minutes</b>: active time (setup/cleanup).<br/>
+• <b>Multiply labor by quantity</b>: when enabled, labor minutes are multiplied by quantity (use for per-item labor).<br/>
+• <b>Bulk discount %</b>: optional discount for large quantity.<br/>
+• <b>Overhead %</b>: business overhead added on top.<br/>
+• <b>Profit %</b>: your profit target.<br/>
+• <b>Minimum fee</b>: minimum charge for small jobs.<br/><br/>
+<b>Advanced / Pro notes</b><br/>
+• <b>Platform fees</b>: Etsy/Shopify/etc (percent + fixed).<br/>
+• <b>Custom item %</b> (Pro): surcharge for custom work.<br/>
+• <b>Presets</b>: quick-fill printer/filament/platform fields.
+`,
+help_inv_btn: "📦 Inventory",
+help_inv_body: `
+<b>What it is</b><br/>
+Stores items you sell often so you can track stock and pricing.<br/><br/>
+
+<b>What you see</b><br/>
+• <b>Qty</b>: units in stock<br/>
+• <b>Unit</b>: price per unit<br/>
+• <b>Total</b>: Qty × Unit<br/><br/>
+
+<b>Buttons</b><br/>
+• <b>+1 / -1</b>: adjust stock<br/>
+• <b>Sold</b>: reduces qty when you sell one<br/>
+• <b>Duplicate</b>: copy an item<br/>
+• <b>Delete</b>: remove item<br/><br/>
+
+<b>Backup</b><br/>
+• <b>Export</b>: saves a JSON backup<br/>
+• <b>Import</b>: restores from JSON<br/><br/>
+
+<b>iOS note</b><br/>
+Safari and the Home Screen app can have separate inventories. For QR scanning, using Safari inventory is recommended.
+`,
+help_qr_btn: "🔗 QR Codes",
+help_qr_body: `
+<b>What QR codes do</b><br/>
+QR codes open a link that can auto-fill <b>Item name</b> + <b>Price</b> in the app.<br/><br/>
+
+<b>Best workflow</b><br/>
+1) Create item in QR section<br/>
+2) Add to Inventory<br/>
+3) Print QR (you can also <b>Save as PDF</b> from iOS print screen)<br/><br/>
+
+<b>Important iOS note (Safari vs Home Screen)</b><br/>
+On iPhone, Safari and the Home Screen app can store data separately (different localStorage).<br/>
+• If you build Inventory in the Home Screen app, scanning a QR with your camera opens Safari, and Safari may not show the same Inventory.<br/>
+• For best consistency with QR scanning, use the app in <b>Safari</b> when creating your Inventory and printing/scanning QRs.<br/><br/>
+
+<b>Android note</b><br/>
+Android is usually more consistent opening the installed PWA, so this issue is less common.
+`,
 
         tab_calculator: "Calculator",
         tab_inventory: "Inventory",
+        tab_help: "Help",
+        help_title: "Help",
+        help_pill: "Guide",
 
         inv_title: "Inventory",
         inv_searchLabel: "Search",
@@ -1396,7 +1529,7 @@ customHeavy: "Heavy +25%",
 customNote: "Covers extra time, revisions, communication, and risk for custom work.",
 
         quantity: "Quantity",
-        laborPerUnit: "Labor minutes are per unit",
+        laborPerUnit: "Multiply labor by quantity",
         bulkDiscountPct: "Bulk discount (%) — applies to batch total",
         batchNote: "Batch note: Quantity multiplies <b>print time, filament, packaging, consumables</b>. Labor can be total or per unit (checkbox).",
         bulkNote: "Bulk discount applies to the <b>batch total</b> (before platform fees). It will not drop below <b>your total cost</b>.",
@@ -1648,9 +1781,78 @@ tier_beginner: "Principiante",
 tier_advanced: "Avanzado",
 tier_pro: "Pro",
 tier_label: "Nivel",
+tab_help: "Ayuda",
+help_calc_btn: "📐 Calculadora",
+help_calc_body: `
+<b>Campos de la calculadora</b><br/>
+• <b>Cantidad</b>: cuántas unidades vas a fabricar.<br/>
+• <b>Horas de impresión</b>: tiempo total (todas las unidades).<br/>
+• <b>Gramos usados</b>: filamento total usado (todas las unidades).<br/>
+• <b>Precio / peso del rollo</b>: calcula el costo por gramo.<br/>
+• <b>% de desperdicio</b>: filamento extra por soportes/fallas.<br/>
+• <b>Empaque</b>: cajas, bolsas, etiquetas (por trabajo).<br/>
+• <b>Consumibles</b>: cinta, pegamento, boquillas, insumos pequeños.<br/>
+• <b>Consumo de energía (kW)</b>: cuánta electricidad usa tu impresora.<br/>
+• <b>Tarifa eléctrica ($/kWh)</b>: lo que cobra tu compañía eléctrica por kilovatio hora.<br/>
+• <b>Tarifa de máquina</b>: desgaste/mantenimiento por hora (si se usa).<br/>
+• <b>Tarifa de mano de obra + minutos</b>: tiempo activo (preparación/limpieza).<br/>
+• <b>Multiplicar mano de obra por cantidad</b>: al activarlo, los minutos se multiplican por la cantidad (para trabajo por unidad).<br/>
+• <b>% Descuento por volumen</b>: descuento opcional por cantidad grande.<br/>
+• <b>% Overhead</b>: gastos generales del negocio.<br/>
+• <b>% Ganancia</b>: tu objetivo de ganancia.<br/>
+• <b>Tarifa mínima</b>: cobro mínimo para trabajos pequeños.<br/><br/>
+<b>Notas Advanced / Pro</b><br/>
+• <b>Tarifas de plataforma</b>: Etsy/Shopify/etc (porcentaje + tarifa fija).<br/>
+• <b>% Personalizado</b> (Pro): recargo por trabajo personalizado.<br/>
+• <b>Presets</b>: llenado rápido (impresora, filamento, plataforma).
+`,
+help_inv_btn: "📦 Inventario",
+help_inv_body: `
+<b>Qué es</b><br/>
+Guarda artículos que vendes seguido para controlar stock y precio.<br/><br/>
+
+<b>Lo que ves</b><br/>
+• <b>Cantidad</b>: unidades disponibles<br/>
+• <b>Unitario</b>: precio por unidad<br/>
+• <b>Total</b>: Cantidad × Unitario<br/><br/>
+
+<b>Botones</b><br/>
+• <b>+1 / -1</b>: ajustar stock<br/>
+• <b>Vendido</b>: baja la cantidad al vender<br/>
+• <b>Duplicar</b>: copiar artículo<br/>
+• <b>Eliminar</b>: borrar artículo<br/><br/>
+
+<b>Respaldo</b><br/>
+• <b>Exportar</b>: guarda respaldo JSON<br/>
+• <b>Importar</b>: restaura desde JSON<br/><br/>
+
+<b>Nota iOS</b><br/>
+Safari y la app en pantalla de inicio pueden tener inventarios separados. Para escanear QR, se recomienda usar el inventario en Safari.
+`,
+help_qr_btn: "🔗 Códigos QR",
+help_qr_body: `
+<b>Qué hacen los QR</b><br/>
+Los códigos QR abren un enlace que puede llenar automáticamente <b>Nombre</b> + <b>Precio</b> en la app.<br/><br/>
+
+<b>Flujo recomendado</b><br/>
+1) Crea el artículo en la sección QR<br/>
+2) Agrégalo al Inventario<br/>
+3) Imprime el QR (también puedes <b>Guardar como PDF</b> desde la pantalla de impresión en iPhone)<br/><br/>
+
+<b>Nota importante iOS (Safari vs Pantalla de inicio)</b><br/>
+En iPhone, Safari y la app en pantalla de inicio pueden guardar datos por separado (localStorage diferente).<br/>
+• Si creas tu Inventario en la app de pantalla de inicio, al escanear un QR la cámara abre Safari, y Safari puede no mostrar el mismo Inventario.<br/>
+• Para que el QR funcione más consistente, usa la app en <b>Safari</b> al crear tu Inventario y al imprimir/escanear QRs.<br/><br/>
+
+<b>Nota Android</b><br/>
+En Android normalmente es más consistente abrir la PWA instalada, así que este problema es menos común.
+`,
 
         tab_calculator: "Calculadora",
         tab_inventory: "Inventario",
+        tab_help: "Ayuda",
+        help_title: "Ayuda",
+        help_pill: "Guía",
 
         inv_title: "Inventario",
         inv_searchLabel: "Buscar",
@@ -1707,7 +1909,7 @@ customHeavy: "Pesado +25%",
 customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo personalizado.",
 
         quantity: "Cantidad",
-        laborPerUnit: "Mano de obra (minutos) por unidad",
+        laborPerUnit: "Multiplicar mano de obra por cantidad",
         bulkDiscountPct: "Descuento por volumen (%) — se aplica al total",
         batchNote: "Nota: La cantidad multiplica <b>tiempo, filamento, empaque, consumibles</b>. La mano de obra puede ser total o por unidad (casilla).",
         bulkNote: "El descuento se aplica al <b>total del lote</b> (antes de comisiones). No bajará de <b>tu costo total</b>.",
@@ -3506,7 +3708,8 @@ function printSelectedLabels(){
       padding: 16px;
       display:grid;
       grid-template-columns: repeat(${cols}, 1fr);
-      gap: 14px;
+     gap:8px;
+
     }
 
     .cell{
@@ -3806,13 +4009,16 @@ function addQRToInventory(){
       const bCalc = $("tabBtnCalc");
       const bInv = $("tabBtnInv");
       const isInv = which === "inv";
+      const isHelp = which === "help";
 
-      if (tabCalc) tabCalc.style.display = isInv ? "none" : "";
-      if (tabInv) tabInv.style.display = isInv ? "" : "none";
 
-      bCalc?.classList.toggle("active", !isInv);
-      bInv?.classList.toggle("active", isInv);
+     if (tabCalc) tabCalc.style.display = (isInv || isHelp) ? "none" : "";
+     if (tabInv) tabInv.style.display = isInv ? "" : "none";
+     if ($("tabHelp")) $("tabHelp").style.display = isHelp ? "" : "none";
 
+    bCalc?.classList.toggle("active", !isInv && !isHelp);
+    bInv?.classList.toggle("active", isInv);
+    $("tabBtnHelp")?.classList.toggle("active", isHelp);
       if (isInv) renderInventory();
     }
 
@@ -4069,12 +4275,14 @@ window.addEventListener("pageshow", (e) => {
       // Tabs
       $("tabBtnCalc")?.addEventListener("click", () => showTab("calc"));
      $("tabBtnInv")?.addEventListener("click", () => {
-  if (getTier() === "beginner"){
+  
+    if (getTier() === "beginner"){
     alert("Inventory is available in Advanced and Pro mode.");
     return;
   }
   showTab("inv");
 });
+$("tabBtnHelp")?.addEventListener("click", () => showTab("help"));
 
 $("openInventoryBtn")?.addEventListener("click", () => {
   if (getTier() === "beginner"){
@@ -4289,6 +4497,11 @@ $("tierSelect").addEventListener("change", (e) => {
   if ($("beginnerMode")) $("beginnerMode").checked = isBeginnerTier;
 
   applyBeginnerModeUI(isBeginnerTier);
+  // Beginner-only: show/hide Machine time rate
+  if ($("machineRateRow")) $("machineRateRow").style.display = isBeginnerTier ? "" : "none";
+
+  // Prevent hidden double-charge
+  if (!isBeginnerTier && $("machineRateHr")) $("machineRateHr").value = "";
 
   if (typeof syncTierDropdownToLicense === "function") {
     syncTierDropdownToLicense();
@@ -4320,6 +4533,11 @@ if ($("tierSelect")) $("tierSelect").value = tierNow;
 if ($("beginnerMode")) $("beginnerMode").checked = isBeginnerTier;
 
 applyBeginnerModeUI(isBeginnerTier);
+// Beginner-only: show/hide Machine time rate (on load)
+if ($("machineRateRow")) $("machineRateRow").style.display = isBeginnerTier ? "" : "none";
+
+// Prevent hidden double-charge (on load)
+if (!isBeginnerTier && $("machineRateHr")) $("machineRateHr").value = "";
 
  const lightDefault = (typeof settings.lightMode === "boolean") ? settings.lightMode : false;
 
@@ -4380,7 +4598,17 @@ $("licenseClearBtn")?.addEventListener("click", clearLicense);
   if (item || price) showTab("calc");
 }
 
-    init();
+  document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".help-toggle");
+  if (!btn) return;
+
+  const box = btn.nextElementSibling;
+  if (!box) return;
+
+  box.style.display = box.style.display === "block" ? "none" : "block";
+});
+
+  init();
   
 // ✅ If coming back from Print page, pageshow handler will restore state
 if (sessionStorage.getItem("qrJustReturnedFromPrint") === "1") {
