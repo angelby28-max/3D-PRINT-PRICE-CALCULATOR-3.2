@@ -2211,8 +2211,9 @@ customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo 
 const SS_DRAFT_KEY = "qr_draft_state_v1"; // sessionStorage (temporary)
 
     // Inputs managed
-   const inputIds = [
+ const inputIds = [
   "quantity","bulkDiscountPct","printHours","printMinutes","machineRateHr","gramsUsed",
+  "spoolPrice","spoolWeight",
   "packagingCost","consumablesCost",
   "powerKW","elecRate","laborRate","laborMin","overheadPct","profitPct","customPct",
   "minFee",
@@ -2221,7 +2222,7 @@ const SS_DRAFT_KEY = "qr_draft_state_v1"; // sessionStorage (temporary)
   "jobName","jobNotes"
 ];
 
-    const clearState = Object.fromEntries(inputIds.map(id => [id, ""]));
+   const clearState = Object.fromEntries(inputIds.map(id => [id, ""]));
 
     function money(n){
       const v = Number.isFinite(n) ? n : 0;
