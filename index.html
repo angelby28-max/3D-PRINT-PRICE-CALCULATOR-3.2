@@ -622,12 +622,6 @@ body.light .modalBody{ color:#111827; }
               <label data-i18n="profitPct">Profit margin (%)</label>
               <input id="profitPct" type="number" min="0" step="0.1" data-i18n-placeholder="ph_profitPct" placeholder="e.g., 15" />
             </div>
-            <div class="advanced-only">
-            <label data-i18n="salesTaxPct">Sales tax (%) (optional)</label>
-            <input id="salesTaxPct" type="number" min="0" step="0.01"
-            data-i18n-placeholder="ph_salesTaxPct"
-            placeholder="e.g., 8.25" />
-            </div>
 
             <div class="advanced-only">
               <label data-i18n="minFee">Minimum job fee ($)</label>
@@ -1639,8 +1633,6 @@ customNote: "Covers extra time, revisions, communication, and risk for custom wo
         ph_laborMin: "e.g., 35",
         ph_overheadPct: "e.g., 10",
         ph_profitPct: "e.g., 15",
-        salesTaxPct: "Sales tax (%) (optional)",
-        ph_salesTaxPct: "e.g., 8.25",
         ph_minFee: "e.g., 25",
         ph_printerPrice: "e.g., 2200",
         ph_printerLifeHours: "e.g., 7000",
@@ -1700,7 +1692,6 @@ customNote: "Covers extra time, revisions, communication, and risk for custom wo
         bd_targetAfterDiscount: "Target after discount",
         bd_platform: "Platform fees added",
         bd_minApplied: "Minimum fee applied?",
-        bd_salesTax: "Sales tax",
 
         // jobs
         jobs_savedPill: (n) => `${n} saved`,
@@ -2024,8 +2015,6 @@ customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo 
         ph_laborMin: "ej., 35",
         ph_overheadPct: "ej., 10",
         ph_profitPct: "ej., 15",
-        salesTaxPct: "Impuesto (%) (opcional)",
-        ph_salesTaxPct: "ej. 8.25",
         ph_minFee: "ej., 25",
         ph_printerPrice: "ej., 2200",
         ph_printerLifeHours: "ej., 7000",
@@ -2085,7 +2074,6 @@ customNote: "Cubre tiempo extra, revisiones, comunicación y riesgo del trabajo 
         bd_targetAfterDiscount: "Objetivo después del descuento",
         bd_platform: "Comisiones agregadas",
         bd_minApplied: "¿Aplicó mínimo?",
-        bd_salesTax: "Impuesto",
 
         // jobs
         jobs_savedPill: (n) => `${n} guardados`,
@@ -3107,11 +3095,6 @@ if (isCustom && customPct > 0){
       const profitPctActual = (final > 0) ? (profitDollars / final) : 0;
 
       const finalPerUnit = final / qty;
-    // ✅ Sales tax (Advanced / Pro only — field is hidden otherwise)
-     const salesTaxPct = Math.max(0, Number($("salesTaxPct")?.value || 0)) / 100;
-     const salesTaxAmount = final * salesTaxPct;
-     const finalWithTax = final + salesTaxAmount;
-
       const costPerUnit = totalCost / qty;
       const profitPerUnit = profitDollars / qty;
 
@@ -3132,9 +3115,8 @@ if (isCustom && customPct > 0){
         ["bd_bulkDiscount", -bulkDiscountAmt, "moneySigned"],
         ["bd_targetAfterDiscount", discountedTarget, "money"],
         ["bd_platform", platformAdded, "money"],
-        ["bd_minApplied", minApplied ? 1 : 0, "bool"],
-        ["bd_salesTax", salesTaxAmount, "money"]
-        ];
+        ["bd_minApplied", minApplied ? 1 : 0, "bool"]
+      ];
 
       $("breakdown").innerHTML = breakdown.map(([key,v,type]) => {
         const label = t(key);
@@ -3168,7 +3150,6 @@ if (isCustom && customPct > 0){
 
       return {
         final, qty, finalPerUnit,
-        salesTaxAmount, finalWithTax,
         totalCost, profitDollars, profitPctActual,
         printHours, gramsUsed, effectiveGrams,
         materialCost, packaging, consumables,
