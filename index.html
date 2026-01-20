@@ -3133,8 +3133,7 @@ if (isCustom && customPct > 0){
         ["bd_targetAfterDiscount", discountedTarget, "money"],
         ["bd_platform", platformAdded, "money"],
         ["bd_minApplied", minApplied ? 1 : 0, "bool"],
-        ["bd_platform", salesTaxAmount, "money"]
-
+        ["bd_salesTax", salesTaxAmount, "money"]
         ];
 
       $("breakdown").innerHTML = breakdown.map(([key,v,type]) => {
