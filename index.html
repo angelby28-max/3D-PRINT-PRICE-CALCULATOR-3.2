@@ -3105,6 +3105,11 @@ if (isCustom && customPct > 0){
       const profitPctActual = (final > 0) ? (profitDollars / final) : 0;
 
       const finalPerUnit = final / qty;
+    // ✅ Sales tax (Advanced / Pro only — field is hidden otherwise)
+     const salesTaxPct = Math.max(0, Number($("salesTaxPct")?.value || 0)) / 100;
+     const salesTaxAmount = final * salesTaxPct;
+     const finalWithTax = final + salesTaxAmount;
+
       const costPerUnit = totalCost / qty;
       const profitPerUnit = profitDollars / qty;
 
@@ -3160,6 +3165,7 @@ if (isCustom && customPct > 0){
 
       return {
         final, qty, finalPerUnit,
+        salesTaxAmount, finalWithTax,
         totalCost, profitDollars, profitPctActual,
         printHours, gramsUsed, effectiveGrams,
         materialCost, packaging, consumables,
