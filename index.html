@@ -2909,7 +2909,7 @@ function applyUnlockedTierToApp(){
 
   function applyFields(fields, opts = {}){
       const force = !!opts.force;
-      const emptyOnly = $("applyEmptyOnly")?.checked ?? true;
+      const emptyOnly = force ? false : ($("applyEmptyOnly")?.checked ?? true);
       for (const [id, value] of Object.entries(fields)){
         if (!$(id)) continue;
         if (emptyOnly && !isEmptyField(id)) continue;
@@ -4406,7 +4406,6 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
   const key = $("printerPreset").value;
   const fields = PRINTER_PRESETS[key]?.fields || {};
  applyFields(fields, { force: true });
- calc(); // ✅ force update right away
 });
 
 
