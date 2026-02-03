@@ -4400,6 +4400,14 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
         const fields = PRINTER_PRESETS[key]?.fields || {};
         applyFields(fields);
       });
+    // ✅ Auto-apply printer preset when dropdown changes
+   $("printerPreset")?.addEventListener("change", () => {
+  const key = $("printerPreset").value;
+  const fields = PRINTER_PRESETS[key]?.fields || {};
+  applyFields(fields);
+  calc(); // ✅ force update right away
+});
+
 
       $("applyFilamentBtn")?.addEventListener("click", () => applyFields(FILAMENT_PRESETS[$("filamentPreset").value]?.fields || {}));
 
