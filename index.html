@@ -2242,7 +2242,7 @@ const SS_DRAFT_KEY = "qr_draft_state_v1"; // sessionStorage (temporary)
 
     // Inputs managed
  const inputIds = [
- "quantity","bulkDiscountPct","printHours","printMinutes","machineRateHr","gramsUsed",
+  "quantity","bulkDiscountPct","printHours","printMinutes","machineRateHr","gramsUsed",
   "spoolPrice","spoolWeight","wastePct","salesTaxPct",
   "packagingCost","consumablesCost",
   "powerKW","elecRate","laborRate","laborMin","overheadPct","profitPct","customPct",
@@ -4409,7 +4409,11 @@ if ($("qrHint") && !$("qrPreview")?.innerHTML.trim()){
 });
 
 
-      $("applyFilamentBtn")?.addEventListener("click", () => applyFields(FILAMENT_PRESETS[$("filamentPreset").value]?.fields || {}));
+    $("applyFilamentBtn")?.addEventListener("click", () => {
+  const key = $("filamentPreset").value;
+  const fields = FILAMENT_PRESETS[key]?.fields || {};
+  applyFields(fields, { force: true }); // ✅ overwrite wastePct every time
+});
 
       $("applyPlatformBtn")?.addEventListener("click", () => {
         const key = $("platformPreset").value;
